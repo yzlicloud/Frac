@@ -1,0 +1,95 @@
+
+import math
+import torch
+from torch.optim.optimizer import Optimizer
+import numpy as np
+import torch.nn as nn
+#import torch.optim as Optimizer
+
+class FracGrad(Optimizer):
+
+
+    def __init__(self, params, lr=1e-1, betas=(0, 0), eps=1e-8, weight_decay=1e-4):
+        if not 0.0 <= lr:
+            raise ValueError("Invalid learning rate: {}".format(lr))
+        if not 0.0 <= eps:
+            raise ValueError("Invalid epsilon value: {}".format(eps))
+        if not 0.0 <= betas[0] < 1.0:
+            raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
+        if not 0.0 <= betas[1] < 1.0:
+            raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
+        defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        super(FracGrad, self).__init__(params, defaults)
+
+    def __setstate__(self, state):
+        super(FracGrad, self).__setstate__(state)
+
+    def step(self, closure=None):
+
+        loss = None
+        if closure is not None:
+            loss = closure()
+
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                if grad.is_sparse:
+                    raise RuntimeError('FracGrad does not support sparse gradients, please consider SparseAdam instead')
+
+                state = self.state[p]
+
+                # State initialization
+                if len(state) == 0:
+                    state['step'] = 0
+                    # Exponential moving average of gradient values
+                    
+                    state['exp_avg'] = torch.zeros_like(p.data)
+
+                    # Previous gradient
+                    state['previous_grad'] = torch.zeros_like(p.data)
+                    state['previous1_grad'] = torch.zeros_like(p.data)
+                    state['previous2_grad'] = torch.zeros_like(p.data)
+                    state['previous3_grad'] = torch.zeros_like(p.data)
+                    state['previous4_grad'] = torch.zeros_like(p.data)
+                    state['previous5_grad'] = torch.zeros_like(p.data)
+                    state['previous6_grad'] = torch.zeros_like(p.data)
+                    state['previous7_grad'] = torch.zeros_like(p.data)
+                    state['previous8_grad'] = torch.zeros_like(p.data)
+                    
+                    
+                    
+                    
+                    
+                    
+
+                    
+                exp_avg, previous_grad, previous1_grad, previous2_grad, previous3_grad, previous4_grad = state['exp_avg'],state['previous_grad'], state['previous1_grad'], state['previous2_grad'], state['previous3_grad'], state['previous4_grad']
+                
+                beta1, beta2 = group['betas']
+
+                state['step'] += 1
+
+                if group['weight_decay'] != 0:
+                    grad.add_(group['weight_decay'], p.data)
+
+
+                exp_avg.add_(12, grad.clone()).add_(-0.0029, previous2_grad).add_(3.93390655e-06, previous4_grad)   ### 2020.11.07，16:47   (91.345)%   (91.457)   
+                state['previous4_grad'] = state['previous3_grad']
+                state['previous3_grad'] = state['previous2_grad']
+                state['previous2_grad'] = state['previous1_grad']
+                state['previous1_grad'] = grad.clone()
+                
+                exp_avg1 = exp_avg
+                
+                
+                
+                state['exp_avg'] = torch.zeros_like(p.data)
+                
+                
+                step_size = group['lr']
+
+
+                p.data.add_(-step_size, exp_avg1)
+        return loss
